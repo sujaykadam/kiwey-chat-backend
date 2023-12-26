@@ -1,12 +1,12 @@
 import { gql } from "apollo-server-core";
 
-const typeDef = gql`
-	type User {
+const typeDefs = gql`
+	type SearchedUser {
 		id: String
 		username: String
 	}
 	type Query {
-		searchUsers(username: String): [User]
+		searchUsers(username: String): [SearchedUser]
 	}
 
 	type CreateUsernameResponse {
@@ -18,4 +18,4 @@ const typeDef = gql`
 	}
 `;
 
-export default typeDef;
+export default typeDefs;
