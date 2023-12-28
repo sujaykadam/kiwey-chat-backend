@@ -28,6 +28,10 @@ const typeDefs = gql`
 		user: User
 		hasSeenLatestMessage: Boolean
 	}
+
+	type Subscription {
+		conversationCreated: Conversation
+	}
 `;
 
 export default typeDefs;
