@@ -14,7 +14,7 @@ const typeDefs = gql`
 		error: String
 	}
 	type Mutation {
-		createUsername(username: String):  CreateUsernameResponse
+		createUsername(username: String): CreateUsernameResponse
 	}
 `;
 
