@@ -4,5 +4,5 @@ export function isUserParticipant(
 	participants: Array<participantPopulated>,
 	userId: string
 ): boolean {
-	return !!participants.some((participant) => participant.id === userId);
+	return !!participants.some((participant) => participant.userId === userId);
 }
