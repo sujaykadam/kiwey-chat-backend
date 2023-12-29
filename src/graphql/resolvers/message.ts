@@ -69,7 +69,17 @@ const resolvers = {
 					data: { id: messageId, senderId, conversationId, body },
 					include: messagePopulated,
 				});
-
+				// Find ConversationParticipant entity
+				const conversationParticipant =
+					await prisma.conversationParticipant.findFirst({
+						where: {
+							conversationId,
+							userId,
+						},
+					});
+				if (!conversationParticipant) {
+					throw new GraphQLError("ConversationParticipant not found");
+				}
 				// Update conversation
 				const conversation = await prisma.conversation.update({
 					where: { id: conversationId },
@@ -78,7 +88,7 @@ const resolvers = {
 						participants: {
 							update: {
 								where: {
-									id: userId,
+									id: conversationParticipant.id,
 								},
 								data: {
 									hasSeenLatestMessage: true,
