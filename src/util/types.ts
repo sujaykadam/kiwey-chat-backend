@@ -4,6 +4,7 @@ import { Context } from "graphql-ws/lib/server";
 import { ISODateString } from "next-auth";
 import {
 	conversationPopulated,
+	messagePopulated,
 	participantPopulated,
 } from "../graphql/resolvers/conversation";
 
@@ -57,3 +58,11 @@ export interface SendMessageArguments {
 	senderId: string;
 	body: string;
 }
+
+export type MessageSentSubscriptionPayload = {
+	messageSent: MessagePopulated;
+};
+
+export type MessagePopulated = Prisma.MessageGetPayload<{
+	include: typeof messagePopulated;
+}>;
