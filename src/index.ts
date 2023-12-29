@@ -1,10 +1,10 @@
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@apollo/server/express4";
+import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { PrismaClient } from "@prisma/client";
-import {
-	ApolloServerPluginDrainHttpServer,
-	ApolloServerPluginLandingPageLocalDefault,
-} from "apollo-server-core";
-import { ApolloServer } from "apollo-server-express";
+import { json } from "body-parser";
+import cors from "cors";
 import express from "express";
 import { PubSub } from "graphql-subscriptions";
 import { useServer } from "graphql-ws/lib/use/ws";
@@ -58,11 +58,6 @@ async function main() {
 	const server = new ApolloServer({
 		schema,
 		csrfPrevention: true,
-		cache: "bounded",
-		context: async ({ req, res }): Promise<GraphQLContext> => {
-			const session = (await getSession({ req })) as Session;
-			return { session, prisma, pubsub };
-		},
 		plugins: [
 			// Proper shutdown for the HTTP server.
 			ApolloServerPluginDrainHttpServer({ httpServer }),
@@ -77,15 +72,28 @@ async function main() {
 					};
 				},
 			},
-			ApolloServerPluginLandingPageLocalDefault({ embed: true }),
 		],
 	});
 	await server.start();
-	server.applyMiddleware({ app, cors: corsOptions });
-	await new Promise<void>((resolve) =>
-		httpServer.listen({ port: 4000 }, resolve)
+	app.use(
+		"/graphql",
+		cors<cors.CorsRequest>(corsOptions),
+		json(),
+		expressMiddleware(server, {
+			context: async ({ req }): Promise<GraphQLContext> => {
+				const session = await getSession({ req });
+
+				return { session: session as Session, prisma, pubsub };
+			},
+		})
 	);
-	console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`);
+	await new Promise<void>((resolve) =>
+		httpServer.listen({ port: process.env.PORT }, resolve)
+	);
+
+	console.log(
+		`Server is now running on http://localhost:${process.env.PORT}/graphql`
+	);
 }
 
 main().catch((err) => console.log(err));
