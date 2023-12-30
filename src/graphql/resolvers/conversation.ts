@@ -79,6 +79,32 @@ const resolvers = {
 				throw new GraphQLError(error?.message);
 			}
 		},
+		markConversationAsRead: async (
+			_: any,
+			args: { userId: string; conversationId: string },
+			context: GraphQLContext
+		): Promise<Boolean> => {
+			const { userId, conversationId } = args;
+			const { session, prisma } = context;
+			if (!session?.user) {
+				throw new GraphQLError("Not authorized");
+			}
+			try {
+				await prisma.conversationParticipant.updateMany({
+					where: {
+						conversationId,
+						userId,
+					},
+					data: {
+						hasSeenLatestMessage: true,
+					},
+				});
+				return true;
+			} catch (error: any) {
+				console.log("markConversationAsReadError", error);
+				throw new GraphQLError(error?.message);
+			}
+		},
 	},
 	Subscription: {
 		conversationCreated: {
