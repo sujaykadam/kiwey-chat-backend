@@ -97,7 +97,7 @@ const resolvers = {
 							updateMany: {
 								where: {
 									NOT: {
-										id: userId,
+										id: conversationParticipant.id,
 									},
 								},
 								data: {
