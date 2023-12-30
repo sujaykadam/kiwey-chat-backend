@@ -51,6 +51,12 @@ export type participantPopulated = Prisma.ConversationParticipantGetPayload<{
 	include: typeof participantPopulated;
 }>;
 
+export type ConversationUpdatedSubscriptionPayload = {
+	conversationUpdated: {
+		conversation: ConversationPopulated;
+	};
+};
+
 // Message types
 export interface SendMessageArguments {
 	id: string;
