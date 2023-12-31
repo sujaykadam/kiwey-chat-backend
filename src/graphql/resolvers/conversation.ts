@@ -3,6 +3,7 @@ import { GraphQLError } from "graphql";
 import { withFilter } from "graphql-subscriptions";
 import { isUserParticipant } from "../../util/functions";
 import {
+	ConversationDeletedSubscriptionPayload,
 	ConversationPopulated,
 	ConversationUpdatedSubscriptionPayload,
 	GraphQLContext,
@@ -113,6 +114,55 @@ const resolvers = {
 				throw new GraphQLError(error?.message);
 			}
 		},
+		deleteConversation: async (
+			_: any,
+			args: { conversationId: string },
+			context: GraphQLContext
+		): Promise<Boolean> => {
+			const { session, prisma, pubsub } = context;
+			const { conversationId } = args;
+			if (!session?.user) {
+				throw new GraphQLError("Not authorized");
+			}
+
+			try {
+				const [deletedConversation] = await prisma.$transaction([
+					prisma.message.updateMany({
+						where: {
+							conversationId,
+						},
+						data: {
+							// need to set conversationId to a dummy value to avoid prisma error
+							conversationId: "000000000000000000000000",
+						},
+					}),
+					prisma.conversationParticipant.deleteMany({
+						where: {
+							conversationId,
+						},
+					}),
+					prisma.message.deleteMany({
+						where: {
+							conversationId,
+						},
+					}),
+					prisma.conversation.delete({
+						where: {
+							id: conversationId,
+						},
+						include: conversationPopulated,
+					}),
+				]);
+
+				pubsub.publish("CONVERSATION_DELETED", {
+					conversationDeleted: deletedConversation,
+				});
+			} catch (error: any) {
+				console.log("DeleteConversationError", error);
+				throw new GraphQLError(error?.message);
+			}
+			return true;
+		},
 	},
 	Subscription: {
 		conversationCreated: {
@@ -158,6 +208,30 @@ const resolvers = {
 						conversationUpdated: {
 							conversation: { participants },
 						},
+					} = payload;
+
+					return isUserParticipant(participants, userId);
+				}
+			),
+		},
+		conversationDeleted: {
+			subscribe: withFilter(
+				(_: any, __: any, context: GraphQLContext) => {
+					const { pubsub } = context;
+					return pubsub.asyncIterator("CONVERSATION_DELETED");
+				},
+				(
+					payload: ConversationDeletedSubscriptionPayload,
+					_: any,
+					context: GraphQLContext
+				) => {
+					const { session } = context;
+					if (!session?.user) {
+						throw new GraphQLError("Not authorized");
+					}
+					const { id: userId } = session.user;
+					const {
+						conversationDeleted: { participants },
 					} = payload;
 
 					return isUserParticipant(participants, userId);

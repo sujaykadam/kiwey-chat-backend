@@ -57,6 +57,9 @@ export type ConversationUpdatedSubscriptionPayload = {
 	};
 };
 
+export type ConversationDeletedSubscriptionPayload = {
+	conversationDeleted: ConversationPopulated;
+};
 // Message types
 export interface SendMessageArguments {
 	id: string;
