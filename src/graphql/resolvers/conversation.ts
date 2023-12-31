@@ -31,6 +31,9 @@ const resolvers = {
 							},
 						},
 					},
+					orderBy: {
+						updatedAt: "desc",
+					},
 					include: conversationPopulated,
 				});
 				return conversations;
