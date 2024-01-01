@@ -126,34 +126,40 @@ const resolvers = {
 			}
 
 			try {
-				const [deletedConversation] = await prisma.$transaction([
-					prisma.message.updateMany({
+				const result = await prisma.$transaction([
+					prisma.conversation.findUnique({
 						where: {
-							conversationId,
+							id: conversationId,
+						},
+						include: conversationPopulated,
+					}),
+					prisma.conversation.update({
+						where: {
+							id: conversationId,
 						},
 						data: {
-							// need to set conversationId to a dummy value to avoid prisma error
-							conversationId: "000000000000000000000000",
-						},
-					}),
-					prisma.conversationParticipant.deleteMany({
-						where: {
-							conversationId,
-						},
-					}),
-					prisma.message.deleteMany({
-						where: {
-							conversationId,
+							latestMessage: {
+								disconnect: true,
+							},
+							messages: {
+								deleteMany: {
+									conversationId,
+								},
+							},
+							participants: {
+								deleteMany: {
+									conversationId,
+								},
+							},
 						},
 					}),
 					prisma.conversation.delete({
 						where: {
 							id: conversationId,
 						},
-						include: conversationPopulated,
 					}),
 				]);
-
+				const deletedConversation = result[0];
 				pubsub.publish("CONVERSATION_DELETED", {
 					conversationDeleted: deletedConversation,
 				});
